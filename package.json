@@ -1,6 +1,6 @@
 {
   "name": "yeps-express-wrapper",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "YEPS express wrapper",
   "main": "index.js",
   "scripts": {
@@ -43,10 +43,8 @@
   "files": [
     "index.js"
   ],
-  "dependencies": {
-    "yeps": "*"
-  },
   "devDependencies": {
+    "body-parser": "^1.16.1",
     "chai": "^3.5.0",
     "chai-http": "^3.0.0",
     "coveralls": "^2.11.16",
@@ -60,6 +58,10 @@
     "npm-run-all": "^4.0.1",
     "nsp": "^2.6.2",
     "promise-pause-timeout": "0.0.1",
-    "rimraf": "^2.5.4"
+    "rimraf": "^2.5.4",
+    "serve-favicon": "^2.4.0",
+    "yeps": "*",
+    "yeps-error": "*",
+    "yeps-router": "*"
   }
 }

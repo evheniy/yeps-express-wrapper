@@ -32,23 +32,24 @@ app.js
     const App = require('yeps');
     const app = new App();
     const error = require('yeps-error');
-    const logger = require('yeps-logger');
     const Router = require('yeps-router');
     const router = new Router();
     const wrapper = require('yeps-express-wrapper');
     
     // express middleware
     const bodyParser = require('body-parser');
+    const favicon = require('serve-favicon');
+    const path = require('path');
     
-
+    
+    app.then(wrapper(favicon(path.join(__dirname, 'public', 'favicon.ico'))));
     app.all([
         error(),
-        logger(),
         wrapper(bodyParser.json()),
     ]);
     
     router.get('/').then(async ctx => {
-        // ctx.req.body
+        console.log(ctx.req.body);
         ctx.res.writeHead(200);
         ctx.res.end('test');
     });
@@ -57,7 +58,7 @@ app.js
     
     
     http
-        .createServer(app.resolve());
+        .createServer(app.resolve())
         .listen(parseInt(process.env.PORT || '3000', 10));
     
 And
