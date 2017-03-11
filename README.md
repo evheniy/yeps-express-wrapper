@@ -63,7 +63,7 @@ app.js
     
 And
     
-    node --harmony app.js
+    node app.js
     
 ## Links
 
