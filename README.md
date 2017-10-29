@@ -54,4 +54,4 @@ It helps run express middleware on YEPS
     server.createHttpServer(app);
     
     
-#### [YEPS documentation](http://yeps.info/)yeps-bodyparser](https://github.com/evheniy/yeps-bodyparser) - YEPS body parser
+#### [YEPS documentation](http://yeps.info/)
