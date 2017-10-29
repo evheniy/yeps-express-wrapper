@@ -30,8 +30,8 @@ It helps run express middleware on YEPS
     const App = require('yeps');
     const error = require('yeps-error');
     const Router = require('yeps-router');
-    
     const server = require('yeps-server');
+    
     const wrapper = require('yeps-express-wrapper');
     
     const app = new App();
