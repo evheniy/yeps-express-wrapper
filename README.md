@@ -26,53 +26,32 @@ It helps run express middleware on YEPS
 
 ## How to use
 
-app.js
-
-    const http = require('http');
+    const path = require('path');
     const App = require('yeps');
-    const app = new App();
     const error = require('yeps-error');
     const Router = require('yeps-router');
-    const router = new Router();
+    
+    const server = require('yeps-server');
     const wrapper = require('yeps-express-wrapper');
     
-    // express middleware
-    const bodyParser = require('body-parser');
-    const favicon = require('serve-favicon');
-    const path = require('path');
+    const app = new App();
+    const router = new Router();
     
+    // express middleware
+    const favicon = require('serve-favicon');
     
     app.then(wrapper(favicon(path.join(__dirname, 'public', 'favicon.ico'))));
-    app.all([
-        error(),
-        wrapper(bodyParser.json()),
-    ]);
+    
+    app.then(error());
     
     router.get('/').then(async ctx => {
-        console.log(ctx.req.body);
-        ctx.res.writeHead(200);
+        ctx.res.statusCode = 200;
         ctx.res.end('test');
     });
     
     app.then(router.resolve());
     
+    server.createHttpServer(app);
     
-    http
-        .createServer(app.resolve())
-        .listen(parseInt(process.env.PORT || '3000', 10));
     
-And
-    
-    node app.js
-    
-## Links
-
-* [yeps](https://github.com/evheniy/yeps) - YEPS
-* [yeps-router](https://github.com/evheniy/yeps-router) - YEPS promise based router
-* [yeps-error](https://github.com/evheniy/yeps-error) - YEPS 404/500 error handler
-* [yeps-redis](https://github.com/evheniy/yeps-redis) - YEPS promise based redis client
-* [yeps-logger](https://github.com/evheniy/yeps-logger) - YEPS Async logger
-* [yeps-boilerplate](https://github.com/evheniy/yeps-boilerplate) - YEPS app boilerplate
-* [yeps-promisify](https://github.com/evheniy/yeps-promisify) - YEPS kernel
-* [yeps-benchmark](https://github.com/evheniy/yeps-benchmark) - performance comparison koa2, express and node http
-* [express](https://github.com/expressjs/express)
+#### [YEPS documentation](http://yeps.info/)yeps-bodyparser](https://github.com/evheniy/yeps-bodyparser) - YEPS body parser

@@ -1,161 +1,170 @@
-const App = require('yeps');
-const error = require('yeps-error');
-const http = require('http');
 const chai = require('chai');
 const chaiHttp = require('chai-http');
+const path = require('path');
+const App = require('yeps');
+const error = require('yeps-error');
+const srv = require('yeps-server');
 const wrapper = require('..');
-const expect = chai.expect;
 const bodyParser = require('body-parser');
 const favicon = require('serve-favicon');
-const path = require('path');
+
+const { expect } = chai;
 
 chai.use(chaiHttp);
 let app;
+let server;
 
 describe('YEPS express wrapper test', () => {
+  beforeEach(() => {
+    app = new App();
+    server = srv.createHttpServer(app);
+  });
+  afterEach(() => {
+    server.close();
+  });
 
-    beforeEach(() => {
-        app = new App();
+  it('should test next()', async () => {
+    let isTestFinished1 = false;
+    let isTestFinished2 = false;
+    let isTestFinished3 = false;
+
+    app.then(wrapper((req, res, next) => {
+      isTestFinished1 = true;
+      next();
+    }));
+
+    app.then(async (ctx) => {
+      isTestFinished2 = true;
+      ctx.res.statusCode = 200;
+      ctx.res.end('test');
     });
 
-    it('should test next()', async () => {
-        let isTestFinished1 = false;
-        let isTestFinished2 = false;
-        let isTestFinished3 = false;
+    await chai.request(server)
+      .get('/')
+      .send()
+      .then((res) => {
+        expect(res).to.have.status(200);
+        expect(res.text).to.be.equal('test');
+        isTestFinished3 = true;
+      });
 
-        app.then(wrapper((req, res, next) => {
-            isTestFinished1 = true;
-            next();
-        }));
-        app.then(async ctx => {
-            isTestFinished2 = true;
-            ctx.res.writeHead(200);
-            ctx.res.end('test');
-        });
+    expect(isTestFinished1).is.true;
+    expect(isTestFinished2).is.true;
+    expect(isTestFinished3).is.true;
+  });
 
-        await chai.request(http.createServer(app.resolve()))
-            .get('/')
-            .send()
-            .then(res => {
-                expect(res).to.have.status(200);
-                expect(res.text).to.be.equal('test');
-                isTestFinished3 = true;
-            });
+  it('should test next(error)', async () => {
+    let isTestFinished1 = false;
+    let isTestFinished2 = false;
+    let isTestFinished3 = false;
 
-        expect(isTestFinished1).is.true;
-        expect(isTestFinished2).is.true;
-        expect(isTestFinished3).is.true;
+    app.all([
+      error(),
+    ]);
+
+    app.then(wrapper((req, res, next) => {
+      isTestFinished1 = true;
+      next(new Error('error'));
+    }));
+
+    app.then(async (ctx) => {
+      isTestFinished2 = true;
+      ctx.res.statusCode = 200;
+      ctx.res.end('test');
     });
 
-    it('should test next(error)', async () => {
-        let isTestFinished1 = false;
-        let isTestFinished2 = false;
-        let isTestFinished3 = false;
+    await chai.request(server)
+      .get('/')
+      .send()
+      .catch((err) => {
+        expect(err).to.have.status(500);
+        expect(err.message).to.be.equal('Internal Server Error');
+        isTestFinished3 = true;
+      });
 
-        app.all([
-            error(),
-        ]);
+    expect(isTestFinished1).is.true;
+    expect(isTestFinished2).is.false;
+    expect(isTestFinished3).is.true;
+  });
 
-        app.then(wrapper((req, res, next) => {
-            isTestFinished1 = true;
-            next(new Error('error'));
-        }));
-        app.then(async ctx => {
-            isTestFinished2 = true;
-            ctx.res.writeHead(200);
-            ctx.res.end('test');
-        });
+  it('should test without next = res.end()', async () => {
+    let isTestFinished1 = false;
+    let isTestFinished2 = false;
+    let isTestFinished3 = false;
 
-        await chai.request(http.createServer(app.resolve()))
-            .get('/')
-            .send()
-            .catch(err => {
-                expect(err).to.have.status(500);
-                expect(err.message).to.be.equal('Internal Server Error');
-                isTestFinished3 = true;
-            });
+    app.then(wrapper((req, res) => {
+      isTestFinished1 = true;
+      res.statusCode = 200;
+      res.end('next');
+    }));
 
-        expect(isTestFinished1).is.true;
-        expect(isTestFinished2).is.false;
-        expect(isTestFinished3).is.true;
+    app.then(async (ctx) => {
+      isTestFinished2 = true;
+      ctx.res.writeHead(200);
+      ctx.res.end('test');
     });
 
-    it('should test without next = res.end()', async () => {
-        let isTestFinished1 = false;
-        let isTestFinished2 = false;
-        let isTestFinished3 = false;
+    await chai.request(server)
+      .get('/')
+      .send()
+      .then((res) => {
+        expect(res).to.have.status(200);
+        expect(res.text).to.be.equal('next');
+        isTestFinished3 = true;
+      });
 
-        app.then(wrapper((req, res) => {
-            isTestFinished1 = true;
-            res.writeHead(200);
-            res.end('next');
-        }));
-        app.then(async ctx => {
-            isTestFinished2 = true;
-            ctx.res.writeHead(200);
-            ctx.res.end('test');
-        });
+    expect(isTestFinished1).is.true;
+    expect(isTestFinished2).is.false;
+    expect(isTestFinished3).is.true;
+  });
 
-        await chai.request(http.createServer(app.resolve()))
-            .get('/')
-            .send()
-            .then(res => {
-                expect(res).to.have.status(200);
-                expect(res.text).to.be.equal('next');
-                isTestFinished3 = true;
-            });
+  it('body-parser', async () => {
+    let isTestFinished1 = false;
+    let isTestFinished2 = false;
 
-        expect(isTestFinished1).is.true;
-        expect(isTestFinished2).is.false;
-        expect(isTestFinished3).is.true;
+    app.then(wrapper(bodyParser.json()));
+
+    app.then(async (ctx) => {
+      isTestFinished1 = true;
+      ctx.res.statusCode = 200;
+      ctx.res.setHeader('Content-Type', 'application/json');
+      ctx.res.end(JSON.stringify(ctx.req.body));
     });
 
-    it('body-parser', async () => {
-        let isTestFinished1 = false;
-        let isTestFinished2 = false;
+    await chai.request(server)
+      .get('/')
+      .set('Content-Type', 'application/json')
+      .send('{"user":"test"}')
+      .then((res) => {
+        expect(res).to.have.status(200);
+        expect(res.text).to.be.equal('{"user":"test"}');
+        expect(res.body).is.an('object');
+        expect(res.body).to.have.property('user');
+        expect(res.body.user).is.not.empty;
+        expect(res.body.user).to.be.equal('test');
+        isTestFinished2 = true;
+      });
 
-        app.then(wrapper(bodyParser.json()));
-        app.then(async ctx => {
-            isTestFinished1 = true;
-            ctx.res.writeHead(200, {'Content-Type': 'application/json'});
-            ctx.res.end(JSON.stringify(ctx.req.body));
-        });
+    expect(isTestFinished1).is.true;
+    expect(isTestFinished2).is.true;
+  });
 
-        await chai.request(http.createServer(app.resolve()))
-            .get('/')
-            .set('Content-Type', 'application/json')
-            .send('{"user":"test"}')
-            .then(res => {
-                expect(res).to.have.status(200);
-                expect(res.text).to.be.equal('{"user":"test"}');
-                expect(res.body).is.an('object');
-                expect(res.body).to.have.property('user');
-                expect(res.body.user).is.not.empty;
-                expect(res.body.user).to.be.equal('test');
-                isTestFinished2 = true;
-            });
+  it('serve-favicon', async () => {
+    let isTestFinished = false;
 
-        expect(isTestFinished1).is.true;
-        expect(isTestFinished2).is.true;
-    });
+    app.then(wrapper(favicon(path.join(__dirname, 'public', 'favicon.ico'))));
 
-    it('serve-favicon', async () => {
-        let isTestFinished = false;
+    await chai.request(server)
+      .get('/favicon.ico')
+      .send()
+      .then((res) => {
+        expect(res).to.have.status(200);
+        expect(res.headers['content-type']).to.be.equal('image/x-icon');
+        expect(res.headers.etag).is.not.empty;
+        expect(res.headers['cache-control']).is.not.empty;
+        isTestFinished = true;
+      });
 
-        app.then(wrapper(favicon(path.join(__dirname, 'public', 'favicon.ico'))));
-
-        await chai.request(http.createServer(app.resolve()))
-            .get('/favicon.ico')
-            .send()
-            .then(res => {
-                expect(res).to.have.status(200);
-                expect(res.headers['content-type']).to.be.equal('image/x-icon');
-                expect(res.headers.etag).is.not.empty;
-                expect(res.headers['cache-control']).is.not.empty;
-                isTestFinished = true;
-            });
-
-        expect(isTestFinished).is.true;
-    });
-
+    expect(isTestFinished).is.true;
+  });
 });
